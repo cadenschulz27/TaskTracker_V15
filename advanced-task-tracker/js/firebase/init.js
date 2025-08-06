@@ -5,7 +5,7 @@ import { getStorage } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-s
 
 // Your web app's Firebase configuration, kept in one place.
 const firebaseConfig = {
-  apiKey: "AIzaSyCvHDlMyxZpgtmhfHram1_OzhBV3Ha0lPo",
+  apiKey: "API KEY HIDDEN. PLEASE REACH OUT TO CADEN IF YOU WOULD LIKE ASSISTANCE.",
   authDomain: "curitt-e2f3d.firebaseapp.com",
   projectId: "curitt-e2f3d",
   storageBucket: "curitt-e2f3d.firebasestorage.app",
@@ -21,4 +21,5 @@ export const db = getFirestore(app);
 // Initialize Firebase Authentication and get a reference to the service.
 export const auth = getAuth(app);
 // Initialize Cloud Storage and get a reference to the service.
+
 export const storage = getStorage(app);
