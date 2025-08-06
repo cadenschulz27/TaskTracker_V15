@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Advanced Task Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F8F9FA; }
+        .text-ink { color: #0B1E2F; }
+        .text-midnight { color: #2C4465; }
+        .bg-midnight { background-color: #2C4465; }
+        .hover\:bg-midnight-dark:hover { background-color: #21334a; }
+        .text-sun { color: #FFC828; }
+        .stroke-sun { stroke: #FFC828; }
+        .focus\:ring-sun:focus { --tw-ring-color: #FFC828; }
+        .tab-button.active, .analytics-toggle-btn.active { background-color: #2C4465; color: #ffffff; }
+        .view-toggle-button.active { background-color: #2C4465; color: #ffffff; }
+        #progress-ring-circle { transition: stroke-dashoffset 0.5s ease-out; transform: rotate(-90deg); transform-origin: 50% 50%; }
+        .modal-overlay { transition: opacity 0.2s ease-in-out; }
+        .modal-panel { transition: all 0.2s ease-in-out; }
+        .modal-hidden { display: none; }
+        .modal-visible { display: flex; }
+        .modal-overlay.opacity-0 { opacity: 0; }
+        .modal-panel.opacity-0 { opacity: 0; transform: scale(0.95); }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .accordion-content.is-open { max-height: 500px; transition: max-height 0.4s ease-in; }
+        .main-accordion-content.is-open { max-height: 1500px; }
+        .accordion-toggle-btn svg { transition: transform 0.3s ease-in-out; }
+        .accordion-toggle-btn.is-open svg { transform: rotate(180deg); }
+        .toggle-label { transition: background-color 0.2s ease-in-out; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #2C4465; }
+        .toggle-checkbox:checked + .toggle-label:after { transform: translateX(100%); }
+        .toggle-label:after { content: ''; position: absolute; top: 0.125rem; left: 0.125rem; width: 1.25rem; height: 1.25rem; background-color: white; border-radius: 9999px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: transform 0.2s ease-in-out; }
+        .dashboard-panel { cursor: grab; }
+        .dashboard-panel.dragging { opacity: 0.5; cursor: grabbing; }
+        .notification-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0.5rem;
+            width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            z-index: 50;
+        }
+        .notification-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: white;
+            background-color: #EF4444; /* Red color */
+            border-radius: 9999px;
+            padding: 0px 6px;
+            pointer-events: none;
+        }
+        .notification-tag {
+            display: inline-block;
+            padding: 0.125rem 0.5rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border-radius: 9999px;
+            text-transform: uppercase;
+        }
+        .tag-new { background-color: #DBEAFE; color: #1E40AF; } /* Blue */
+        .tag-comment { background-color: #FEE2E2; color: #991B1B; } /* Red */
+        .tag-attachment { background-color: #FEF3C7; color: #92400E; } /* Amber */
+        .tag-subtask { background-color: #D1FAE5; color: #065F46; } /* Green */
+        .tag-status { background-color: #E0E7FF; color: #3730A3; } /* Indigo */
+        .tag-delete { background-color: #E5E7EB; color: #374151; } /* Gray */
+        .scrolling-banner {
+            background-color: #2C4465; /* Midnight Blue */
+            color: white;
+            font-size: 0.9rem; /* Slightly smaller for the dashboard view */
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            border-radius: 0.75rem; /* Rounded corners */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        .scrolling-text {
+            display: inline-block;
+            animation: marquee 15s linear infinite;
+        }
+        @keyframes marquee {
+            0% {
+                transform: translateX(100%);
+            }
+            100% {
+                transform: translateX(-150%);
+            }
+        }
+    </style>
+</head>
+<body class="text-ink">
+
+    <div class="w-full max-w-7xl mx-auto p-4 md:p-6">
+        
+        <header class="mb-6">
+            <div class="flex flex-wrap justify-between items-center gap-4">
+                <div class="flex items-center gap-4">
+                    <img src="./images/logo.png" alt="Task Tracker Logo" class="h-16">
+                    <div>
+                        <h1 id="main-header-title" class="text-3xl font-bold text-midnight">Intern Assignment Dashboard</h1>
+                        <p id="current-date" class="text-slate-500 mt-1">Loading date...</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="relative h-20 w-20">
+                        <svg class="h-full w-full" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="45" class="stroke-current text-slate-200" stroke-width="10" fill="transparent"></circle>
+                            <circle id="progress-ring-circle" cx="50" cy="50" r="45" class="stroke-sun" stroke-width="10" fill="transparent" stroke-linecap="round"></circle>
+                            <text id="progress-text" x="50" y="50" class="font-bold text-xl text-midnight" text-anchor="middle" alignment-baseline="middle">0%</text>
+                        </svg>
+                    </div>
+                    <div class="text-right">
+                        <p id="welcome-message" class="font-semibold text-ink">Loading...</p>
+                        <div>
+                            <a href="./profile.html" class="text-sm text-midnight hover:underline">Profile</a>
+                            <span class="text-slate-400 mx-1">|</span>
+                            <button id="logout-btn" class="text-sm text-midnight hover:underline">Logout</button>
+                        </div>
+                    </div>
+                    <img id="user-avatar" src="./images/anonymous_image.png" alt="User Avatar" class="h-12 w-12 rounded-full object-cover">
+                    <div class="relative">
+                        <button id="notifications-btn" class="p-2 rounded-full hover:bg-slate-200 transition duration-200 relative">
+                            <svg class="w-6 h-6 text-midnight" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405C18.66 14.887 19 13.987 19 13v-3a6 6 0 10-12 0v3c0 .987.34 1.887.405 2.595L4 17h5m-1 0v1a2 2 0 104 0v-1m-4 0h8"></path></svg>
+                            <span id="notification-count" class="notification-count hidden">0</span>
+                        </button>
+                        <div id="notifications-dropdown" class="notification-dropdown hidden">
+                            <div class="p-4 border-b border-slate-200">
+                                <h4 class="font-bold text-lg text-midnight">Notifications</h4>
+                            </div>
+                            <div id="notifications-list" class="divide-y divide-slate-100">
+                                <div class="p-4 text-sm text-slate-500">No new notifications.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div id="quote-of-the-day" class="mb-6 text-center text-slate-500 bg-white p-4 rounded-2xl shadow-lg">
+            <p class="italic">"Loading quote..."</p>
+        </div>
+
+        <div class="scrolling-banner mb-6 hidden">
+            <div class="scrolling-text">
+                <span>Thanks for joining the July 30th AI in wealth management presentation at Curi Capital!&nbsp;&nbsp;&circ;&nbsp;&nbsp;</span>
+            </div>
+        </div>
+
+        <nav class="mb-6 bg-white rounded-2xl shadow-xl p-4 flex flex-wrap justify-center gap-4">
+            <button id="tab-board-btn" class="tab-button active px-6 py-3 rounded-lg font-semibold text-midnight hover:bg-slate-100 transition duration-200">Task Board</button>
+            <button id="tab-calendar-btn" class="tab-button px-6 py-3 rounded-lg font-semibold text-midnight hover:bg-slate-100 transition duration-200">Calendar</button>
+            <button id="tab-dashboard-btn" class="tab-button px-6 py-3 rounded-lg font-semibold text-midnight hover:bg-slate-100 transition duration-200">Dashboard</button>
+            <button id="tab-chat-btn" class="tab-button px-6 py-3 rounded-lg font-semibold text-midnight hover:bg-slate-100 transition duration-200">Chat</button>
+            <button id="tab-clients-btn" class="tab-button px-6 py-3 rounded-lg font-semibold text-midnight hover:bg-slate-100 transition duration-200">Clients</button>
+        </nav>
+
+        <div id="task-filters" class="flex flex-col md:flex-row md:items-end gap-4 mb-6 pb-4 border-b border-slate-200 bg-white rounded-2xl shadow-xl p-6 md:p-8">
+            <div class="flex-grow">
+                <label for="global-search-input" class="text-sm font-medium text-slate-600">Search Tasks</label>
+                <div class="relative mt-1">
+                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <svg class="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" /></svg>
+                    </div>
+                    <input type="search" id="global-search-input" class="block w-full rounded-lg border border-slate-300 bg-white py-2 pl-10 pr-3 text-sm placeholder:text-slate-400 focus:ring-2 focus:ring-sun" placeholder="Search by name or description...">
+                </div>
+            </div>
+            <div>
+                <label for="filter-priority" class="text-sm font-medium text-slate-600">Filter by Priority</label>
+                <select id="filter-priority" class="mt-1 block w-full md:w-auto p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-sun">
+                    <option value="all">All Priorities</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+            </div>
+            <div>
+                <label for="filter-assignee" class="text-sm font-medium text-slate-600">Filter by Assignee</label>
+                <select id="filter-assignee" class="mt-1 block w-full md:w-auto p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-sun">
+                    <option value="all">All Interns</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="client-filters" class="hidden mb-6">
+            <div class="relative inline-block text-left">
+                <button id="client-filter-btn" type="button" class="inline-flex justify-center w-full rounded-md border border-slate-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sun">
+                    Filters
+                    <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                </button>
+                <div id="client-filter-dropdown" class="origin-top-right absolute right-0 mt-2 w-72 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden p-4 space-y-4">
+                    <div class="flex-grow">
+                        <label for="client-search-input" class="text-sm font-medium text-slate-600">Search Clients</label>
+                        <div class="relative mt-1">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <svg class="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" /></svg>
+                            </div>
+                            <input type="search" id="client-search-input" class="block w-full rounded-lg border border-slate-300 bg-white py-2 pl-10 pr-3 text-sm placeholder:text-slate-400 focus:ring-2 focus:ring-sun" placeholder="Search by name, email, or phone...">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="filter-client-status" class="text-sm font-medium text-slate-600">Filter by Status</label>
+                        <select id="filter-client-status" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-sun">
+                            <option value="all">All Statuses</option>
+                            <option>Active</option>
+                            <option>Prospect</option>
+                            <option>Inactive</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter-client-risk" class="text-sm font-medium text-slate-600">Filter by Risk Profile</label>
+                        <select id="filter-client-risk" class="mt-1 block w-full p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-sun">
+                            <option value="all">All Profiles</option>
+                            <option>Conservative</option>
+                            <option>Moderate</option>
+                            <option>Aggressive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="task-board-view">
+            <main class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-midnight">Task Board</h2>
+                    <button id="new-task-btn" class="bg-midnight text-white font-semibold px-4 py-2 rounded-lg hover:bg-midnight-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sun transition duration-200 shadow-sm flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        New Task
+                    </button>
+                </div>
+                <div id="kanban-board" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-slate-50 rounded-lg p-4">
+                        <h3 class="font-bold text-midnight mb-4">Not Started</h3>
+                        <div id="tasks-not-started" class="space-y-4 min-h-[100px]"></div>
+                    </div>
+                    <div class="bg-slate-50 rounded-lg p-4">
+                        <h3 class="font-bold text-midnight mb-4">In Progress</h3>
+                        <div id="tasks-in-progress" class="space-y-4 min-h-[100px]"></div>
+                    </div>
+                    <div class="bg-slate-50 rounded-lg p-4">
+                        <h3 class="font-bold text-midnight mb-4">Completed</h3>
+                        <div id="tasks-completed" class="space-y-4 min-h-[100px]"></div>
+                    </div>
+                </div>
+                <div id="loading-spinner" class="flex justify-center items-center py-8"></div>
+                <p id="empty-state" class="text-center text-slate-500 py-8 hidden">No tasks match the current filters.</p>
+            </main>
+        </div>
+
+        <div id="calendar-view" class="hidden">
+            <main class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex items-center gap-4">
+                        <button id="prev-btn" class="p-2 rounded-lg hover:bg-slate-200 transition duration-200"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-midnight"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+                        <h2 id="calendar-header-title" class="text-xl font-bold text-midnight w-48 text-center"></h2>
+                        <button id="next-btn" class="p-2 rounded-lg hover:bg-slate-200 transition duration-200"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-midnight"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+                    </div>
+                    <div class="flex gap-2 bg-slate-100 p-1 rounded-lg">
+                        <button id="weekly-view-btn" class="view-toggle-button active px-4 py-1.5 text-sm font-semibold rounded-md">Weekly</button>
+                        <button id="monthly-view-btn" class="view-toggle-button px-4 py-1.5 text-sm font-semibold rounded-md">Monthly</button>
+                    </div>
+                </div>
+                <div id="priority-key" class="flex flex-wrap gap-4 text-sm text-slate-600 mb-4 items-center">
+                    <span class="font-semibold">Priority Key:</span>
+                    <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full" style="background-color: #FFC828;"></span><span>High</span></div>
+                    <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full" style="background-color: #C1E0F9;"></span><span>Medium</span></div>
+                    <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full" style="background-color: #E2E8F0;"></span><span>Low</span></div>
+                </div>
+                <div id="calendar-grid" class="grid grid-cols-7 gap-1 md:gap-2 text-center text-sm">
+                    <div class="font-bold text-slate-500 p-2">Sun</div><div class="font-bold text-slate-500 p-2">Mon</div><div class="font-bold text-slate-500 p-2">Tue</div><div class="font-bold text-slate-500 p-2">Wed</div><div class="font-bold text-slate-500 p-2">Thu</div><div class="font-bold text-slate-500 p-2">Fri</div><div class="font-bold text-slate-500 p-2">Sat</div>
+                </div>
+            </main>
+        </div>
+
+        <div id="analytics-view" class="hidden">
+            <main class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 id="analytics-title" class="text-xl font-semibold text-midnight">Analytics Dashboard</h2>
+                    <div id="analytics-filter-wrapper" class="hidden">
+                        <label for="analytics-intern-filter" class="text-sm font-medium text-slate-600">Filter by Intern</label>
+                        <select id="analytics-intern-filter" class="mt-1 block w-full md:w-auto p-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-sun"></select>
+                    </div>
+                </div>
+                <div id="dashboard-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="dashboard-panel bg-slate-100 p-4 rounded-lg" draggable="true"><h3 class="font-bold text-midnight mb-2 text-center">Busiest Day of the Week</h3><canvas id="busiest-day-chart"></canvas></div>
+                    <div class="dashboard-panel bg-slate-100 p-4 rounded-lg" draggable="true"><h3 class="font-bold text-midnight mb-2 text-center">Tasks by Status</h3><canvas id="status-chart"></canvas></div>
+                    <div class="dashboard-panel bg-slate-100 p-4 rounded-lg" draggable="true"><h3 class="font-bold text-midnight mb-2 text-center">Overdue Tasks by Assignee</h3><canvas id="overdue-chart"></canvas></div>
+                    <div class="dashboard-panel bg-slate-100 p-4 rounded-lg" draggable="true"><h3 class="font-bold text-midnight mb-2 text-center">Task Creation vs. Completion</h3><canvas id="workload-chart"></canvas></div>
+                    <div class="dashboard-panel bg-slate-100 p-4 rounded-lg" draggable="true"><h3 class="font-bold text-midnight mb-2 text-center">On-Time Completion Rate</h3><canvas id="on-time-chart"></canvas></div>
+                    <div class="dashboard-panel bg-slate-100 p-4 rounded-lg" draggable="true">
+                        <h3 class="font-bold text-midnight mb-4 text-center">Avg. Task Lifespan</h3>
+                        <div class="space-y-3">
+                            <div class="text-center"><p class="text-xl font-bold text-red-500" id="avg-lifespan-high">--</p><p class="text-xs text-slate-500">High Priority</p></div>
+                            <div class="text-center"><p class="text-xl font-bold text-yellow-500" id="avg-lifespan-medium">--</p><p class="text-xs text-slate-500">Medium Priority</p></div>
+                            <div class="text-center"><p class="text-xl font-bold text-sky-500" id="avg-lifespan-low">--</p><p class="text-xs text-slate-500">Low Priority</p></div>
+                        </div>
+                    </div>
+                    <div class="dashboard-panel bg-slate-100 p-4 rounded-lg col-span-1 md:col-span-2 lg:col-span-3" draggable="true"><h3 class="font-bold text-midnight mb-2 text-center">Task Completion Velocity</h3><canvas id="velocity-chart"></canvas></div>
+                </div>
+            </main>
+        </div>
+
+        <div id="chat-view" class="hidden">
+            <main class="bg-white rounded-2xl shadow-xl p-6 md:p-8 flex flex-col" style="height: 70vh;">
+                <h2 class="text-xl font-semibold text-midnight mb-4 border-b pb-4">Team Chat</h2>
+                <div id="chat-messages-container" class="flex-grow overflow-y-auto pr-4 space-y-4">
+                    </div>
+                <form id="chat-form" class="mt-4 flex gap-3">
+                    <input type="text" id="chat-input" required placeholder="Type a message..." class="flex-grow p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun">
+                    <button type="submit" class="bg-midnight text-white font-semibold px-6 py-3 rounded-lg hover:bg-midnight-dark">Send</button>
+                </form>
+            </main>
+        </div>
+
+        <div id="clients-view" class="hidden">
+            <main class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+                <div class="flex flex-wrap justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-midnight">Clients</h2>
+                    <div class="flex items-center gap-2">
+                        <button id="import-clients-btn" class="bg-slate-100 text-ink font-semibold px-4 py-2 rounded-lg hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sun transition duration-200 shadow-sm flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            Import
+                        </button>
+                        <button id="new-client-btn" class="bg-midnight text-white font-semibold px-4 py-2 rounded-lg hover:bg-midnight-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sun transition duration-200 shadow-sm flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            New Client
+                        </button>
+                    </div>
+                </div>
+                <input type="file" id="client-spreadsheet-input" class="hidden" accept=".xlsx, .xls, .csv">
+                <div id="clients-list-container">
+                    </div>
+            </main>
+        </div>
+
+    </div>
+
+    <div id="task-modal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 items-center justify-center p-4 modal-hidden opacity-0">
+        <div class="modal-panel bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 md:p-8 opacity-0">
+            <form id="task-form">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 id="modal-title" class="text-2xl font-bold text-midnight">Create a New Task</h2>
+                    <button type="button" id="close-modal-btn" class="text-slate-500 hover:text-slate-800"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                </div>
+                <div class="space-y-4">
+                    <div><label for="task-name" class="block text-sm font-medium text-ink">Task Name</label><input type="text" id="task-name" name="task-name" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun"></div>
+                    <div><label for="task-description" class="block text-sm font-medium text-ink">Description</label><textarea id="task-description" name="task-description" rows="3" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun"></textarea></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label for="task-due-date" class="block text-sm font-medium text-ink">Due Date</label><input type="date" id="task-due-date" name="task-due-date" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun"></div>
+                        <div>
+                            <label for="task-priority" class="block text-sm font-medium text-ink">Priority</label>
+                            <select id="task-priority" name="task-priority" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun bg-white">
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between bg-slate-50 p-3 rounded-lg">
+                        <label for="task-personal" class="block text-sm font-medium text-ink">Personal Task (only visible to you)</label>
+                        <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="toggle" id="task-personal" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                            <label for="task-personal" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                        </div>
+                    </div>
+                    <div id="assignee-wrapper">
+                        <label for="task-assignee" class="block text-sm font-medium text-ink">Assign To</label>
+                        <select id="task-assignee" name="task-assignee" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun bg-white"><option>Loading users...</option></select>
+                    </div>
+                    <div>
+                        <label for="task-client" class="block text-sm font-medium text-ink">Link to Client (Optional)</label>
+                        <select id="task-client" name="task-client" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun bg-white">
+                            <option value="">No Client</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-8"><button type="submit" id="modal-submit-btn" class="w-full bg-midnight text-white font-semibold p-3 rounded-lg hover:bg-midnight-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sun transition duration-200 shadow-sm">Create Task</button></div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="client-modal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 items-center justify-center p-4 modal-hidden opacity-0">
+        <div class="modal-panel bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 md:p-8 opacity-0 max-h-[90vh] flex flex-col">
+            <form id="client-form" class="flex-grow overflow-y-auto pr-4">
+                <div class="flex justify-between items-center mb-6 sticky top-0 bg-white pb-4 -mt-2 pt-2">
+                    <h2 id="client-modal-title" class="text-2xl font-bold text-midnight">Add New Client</h2>
+                    <button type="button" id="close-client-modal-btn" class="text-slate-500 hover:text-slate-800"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                </div>
+                <div class="space-y-5">
+                    <div class="p-4 border border-slate-200 rounded-lg">
+                        <h3 class="font-semibold text-lg text-midnight mb-3">Main Details</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="md:col-span-2">
+                                <label for="client-name" class="block text-sm font-medium text-ink">Full Name</label>
+                                <input type="text" id="client-name" name="name" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun">
+                            </div>
+                            <div>
+                                <label for="client-status" class="block text-sm font-medium text-ink">Status</label>
+                                <select id="client-status" name="status" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun bg-white">
+                                    <option>Prospect</option>
+                                    <option selected>Active</option>
+                                    <option>Inactive</option>
+                                </select>
+                            </div>
+                             <div class="md:col-span-3">
+                                <label for="client-since" class="block text-sm font-medium text-ink">Client Since</label>
+                                <input type="date" id="client-since" name="clientSince" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 border border-slate-200 rounded-lg">
+                        <h3 class="font-semibold text-lg text-midnight mb-3">Personal Information</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             <div>
+                                <label for="client-birthday" class="block text-sm font-medium text-ink">Birthday</label>
+                                <input type="date" id="client-birthday" name="birthday" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun">
+                            </div>
+                            <div>
+                                <label for="client-age" class="block text-sm font-medium text-ink">Age</label>
+                                <input type="number" id="client-age" name="age" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 border border-slate-200 rounded-lg">
+                        <h3 class="font-semibold text-lg text-midnight mb-3">Contact Information</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             <div>
+                                <label for="client-email" class="block text-sm font-medium text-ink">Email Address</label>
+                                <input type="email" id="client-email" name="email" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun">
+                            </div>
+                            <div>
+                                <label for="client-phone" class="block text-sm font-medium text-ink">Phone Number</label>
+                                <input type="tel" id="client-phone" name="phone" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun">
+                                <p id="phone-error-message" class="text-red-600 text-xs mt-1"></p>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label for="client-address" class="block text-sm font-medium text-ink">Mailing Address</label>
+                            <textarea id="client-address" name="address" rows="3" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun"></textarea>
+                        </div>
+                    </div>
+                    <div class="p-4 border border-slate-200 rounded-lg">
+                        <h3 class="font-semibold text-lg text-midnight mb-3">Financials</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="client-household" class="block text-sm font-medium text-ink">Assigned Household</label>
+                                <input type="text" id="client-household" name="assignedHousehold" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun">
+                            </div>
+                            <div>
+                                <label for="client-fee" class="block text-sm font-medium text-ink">Fee Schedule</label>
+                                <input type="text" id="client-fee" name="feeSchedule" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun">
+                            </div>
+                             <div>
+                                <label for="client-risk" class="block text-sm font-medium text-ink">Risk Profile</label>
+                                <select id="client-risk" name="riskProfile" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun bg-white">
+                                    <option>Conservative</option>
+                                    <option>Moderate</option>
+                                    <option>Aggressive</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 border border-slate-200 rounded-lg">
+                        <h3 class="font-semibold text-lg text-midnight mb-3">Additional Details</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="client-accounts" class="block text-sm font-medium text-ink">Accounts</label>
+                                <textarea id="client-accounts" name="accounts" rows="4" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun" placeholder="e.g.,&#10;IRA - 12345678&#10;Trust - 87654321"></textarea>
+                            </div>
+                            <div>
+                                <label for="client-beneficiaries" class="block text-sm font-medium text-ink">Beneficiaries</label>
+                                <textarea id="client-beneficiaries" name="beneficiaries" rows="4" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun" placeholder="e.g.,&#10;Jane Doe (Spouse)&#10;John Doe (Son)"></textarea>
+                            </div>
+                             <div class="md:col-span-2">
+                                <label for="client-notes" class="block text-sm font-medium text-ink">Notes</label>
+                                <textarea id="client-notes" name="notes" rows="4" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </form>
+            <div class="mt-8 flex-shrink-0">
+                <button type="submit" form="client-form" id="client-modal-submit-btn" class="w-full bg-midnight text-white font-semibold p-3 rounded-lg hover:bg-midnight-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sun transition duration-200 shadow-sm">Add Client</button>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module" src="./js/app.js"></script>
+</body>
+</html>

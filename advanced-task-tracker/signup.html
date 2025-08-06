@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Task Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #F8F9FA; /* Off-white background */
+        }
+        .text-ink { color: #0B1E2F; }
+        .text-midnight { color: #2C4465; }
+        .bg-midnight { background-color: #2C4465; }
+        .hover\:bg-midnight-dark:hover { background-color: #21334a; } /* Darker shade for hover */
+        .focus\:ring-sun:focus { 
+            --tw-ring-color: #FFC828;
+        }
+        /* NEW: Scrolling Banner Styles */
+        .scrolling-banner {
+            background-color: #2C4465; /* A dark blue banner */
+            color: white;
+            font-size: 1rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            white-space: nowrap;
+            overflow: hidden; /* This is key to hide the text as it scrolls */
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 448px;
+            margin-bottom: 0.5rem;
+        }
+        .scrolling-text-wrapper {
+            display: flex;
+        }
+        .scrolling-text {
+            animation: marquee 10s linear infinite;
+        }
+        @keyframes marquee {
+            0% {
+                transform: translateX(100%);
+            }
+            100% {
+                transform: translateX(-150%);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="min-h-screen flex flex-col items-center justify-center p-4">
+        
+        <!-- NEW: Scrolling Banner -->
+        <div class="scrolling-banner hidden">
+            <div class="scrolling-text-wrapper">
+                <span class="scrolling-text">Thanks for joining the July 30th AI in wealth management presentation at Curi Capital!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+            </div>
+        </div>
+
+        <div class="w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl p-8">
+            <div class="flex justify-center mb-6">
+                <img src="./images/logo.png" alt="Task Tracker Logo" class="h-20">
+            </div>            
+            <header class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-midnight">Create Your Account</h1>
+                <p class="text-slate-600 mt-2">Join the team to start tracking tasks.</p>
+            </header>
+
+            <form id="signup-form">
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="firstName" class="block text-sm font-medium text-ink">First Name</label>
+                            <input type="text" id="firstName" name="firstName" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun">
+                        </div>
+                        <div>
+                            <label for="lastName" class="block text-sm font-medium text-ink">Last Name</label>
+                            <input type="text" id="lastName" name="lastName" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="role" class="block text-sm font-medium text-ink">Role</label>
+                        <select id="role" name="role" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun bg-white">
+                            <option value="" disabled selected>Select your role</option>
+                            <option value="Advisor">Advisor</option>
+                            <option value="WMA">WMA</option>
+                            <option value="Intern">Intern</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-ink">Email Address</label>
+                        <input type="email" id="email" name="email" required class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun">
+                    </div>
+
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-ink">Password</label>
+                        <input type="password" id="password" name="password" required minlength="6" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun">
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <button type="submit" class="w-full bg-midnight text-white font-semibold p-3 rounded-lg hover:bg-midnight-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sun transition duration-200 shadow-sm">
+                        Create Account
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-6 text-center">
+                <p class="text-sm text-slate-600">
+                    Already have an account? 
+                    <a href="./index.html" class="font-medium text-midnight hover:underline">Log In</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module" src="./js/auth.js"></script>
+</body>
+</html>

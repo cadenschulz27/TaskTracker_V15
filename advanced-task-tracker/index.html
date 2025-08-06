@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Task Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F9FA; /* Off-white background */
+        }
+        .text-ink { color: #0B1E2F; }
+        .text-midnight { color: #2C4465; }
+        .bg-midnight { background-color: #2C4465; }
+        .hover\:bg-midnight-dark:hover { background-color: #21334a; } /* Darker shade for hover */
+        .focus\:ring-sun:focus { 
+            --tw-ring-color: #FFC828;
+        }
+        /* UPDATED: Scrolling Banner Styles for immediate and seamless animation */
+        .scrolling-banner {
+            background-color: #2C4465; /* A dark blue banner */
+            color: white;
+            font-size: 1rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            white-space: nowrap;
+            overflow: hidden; /* This is key to hide the text as it scrolls */
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 448px;
+            margin-bottom: 0.5rem;
+        }
+        .scrolling-text {
+            display: inline-block; /* The text itself */
+            animation: marquee 10s linear infinite;
+        }
+        @keyframes marquee {
+            0% {
+                transform: translateX(100%); /* Start from the right side of the container */
+            }
+            100% {
+                transform: translateX(-150%); /* Scroll to the left, beyond the container's width */
+            }
+        }
+        /* UPDATED: Login Tip Bubble Styles (now a centered block element, text-fitting width, no slant) */
+        .login-tip-bubble {
+            color: white;
+            border-radius: 1rem;
+            font-weight: 500;
+            padding: 1.25rem 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1.5rem;
+            width: fit-content; /* CHANGED: width fits content */
+            max-width: 300px;
+            z-index: 10;
+            text-align: center;
+            background-image: linear-gradient(135deg, #2C4465 0%, #0B1E2F 100%);
+            transform: rotate(0deg); /* CHANGED: Removed slant */
+        }
+        .login-tip-bubble h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        .login-tip-bubble .instructions {
+            text-align: left;
+        }
+        .login-tip-bubble .instructions span {
+            display: inline;
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+        
+        /* NEW: Styles for the animated input fields */
+        .login-input-highlight {
+            animation: input-glow 2s infinite ease-in-out;
+            border-color: #C1E0F9 !important;
+            box-shadow: 0 0 5px #C1E0F9;
+        }
+        @keyframes input-glow {
+            0% {
+                box-shadow: 0 0 5px rgba(193, 224, 249, 0.5);
+                transform: scale(1.0);
+            }
+            50% {
+                box-shadow: 0 0 15px rgba(193, 224, 249, 1.0); /* CHANGED: Increased glow intensity */
+                transform: scale(1.01);
+            }
+            100% {
+                box-shadow: 0 0 5px rgba(193, 224, 249, 0.5);
+                transform: scale(1.0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="min-h-screen flex flex-col items-center justify-center p-4">
+        
+        <!-- NEW: Banner and instructions are now in the main document flow -->
+        <div class="scrolling-banner hidden">
+            <div class="scrolling-text">
+                <span>Thanks for joining the July 30th AI in wealth management presentation at Curi Capital!&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+            </div>
+        </div>
+
+        <div class="login-tip-bubble">
+            <h4>LOGIN INSTRUCTIONS</h4>
+            <div class="instructions">
+                <span>Email: <strong>{firstname}@gmail.com</strong></span>
+                <span>Password: <strong>{firstname}123</strong></span>
+            </div>
+        </div>
+        
+        <div class="w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl p-8 relative">
+            <div class="flex justify-center mb-6">
+                <img src="./images/logo.png" alt="Task Tracker Logo" class="h-20">
+            </div>            
+            <header class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-midnight">Welcome Back</h1>
+                <p class="text-slate-600 mt-2">Enter your credentials to log in.</p>
+            </header>
+
+            <form id="login-form">
+                <div class="space-y-4">
+                    
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-ink">Email Address</label>
+                        <input type="email" id="email" name="email" required placeholder="{firstname}@gmail.com" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun">
+                    </div>
+
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-ink">Password</label>
+                        <input type="password" id="password" name="password" required placeholder="{firstname}123" class="mt-1 block w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sun">
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <button type="submit" class="w-full bg-midnight text-white font-semibold p-3 rounded-lg hover:bg-midnight-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sun transition duration-200 shadow-sm">
+                        Log In
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-6 text-center">
+                <p class="text-sm text-slate-600">
+                    Don't have an account? 
+                    <a href="./signup.html" class="font-medium text-midnight hover:underline">Sign Up</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module" src="./js/auth.js"></script>
+</body>
+</html>
